@@ -9,19 +9,19 @@ etc).
 
 Root path in vault:
 
-* /secret/ansible/
+* `/secret/ansible/`
 
 Precendence (applied top to bottom, so last takes precendence):
 * Groups:
-  * /secret/ansible/groups/all
-  * /secret/ansible/groups/ungrouped
-  * /secret/ansible/groups/your_inv_item_group
+  * `/secret/ansible/groups/all`
+  * `/secret/ansible/groups/ungrouped`
+  * `/secret/ansible/groups/your_inv_item_group`
   * ...
 
 * Hosts/Domains:
-  * /secret/ansible/domains/com
-  * /secret/ansible/domains/example.com
-  * /secret/ansible/hosts/hosta.example.com
+  * `/secret/ansible/domains/com`
+  * `/secret/ansible/domains/example.com`
+  * `/secret/ansible/hosts/hosta.example.com`
 
 All values retrieved from these paths are mapped as ansible variables,
 e.g. `ansible_user`, `ansible_password`, etc.
