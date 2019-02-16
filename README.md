@@ -16,7 +16,7 @@ Precendence (applied top to bottom, so last takes precendence):
   * /secret/ansible/groups/all
   * /secret/ansible/groups/ungrouped
   * /secret/ansible/groups/your_inv_item_group
-        ...
+  * ...
 
 * Hosts/Domains:
   * /secret/ansible/domains/com
