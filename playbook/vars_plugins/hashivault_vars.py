@@ -90,7 +90,6 @@ class VarsModule(BaseVarsPlugin):
         result = self.v_client.read(
             path='secret/ansible/%s/%s' % (folder, entity)
         )
-        # print("result:", format_json(result))
         if not result:
             return {}
         return result["data"]
@@ -104,18 +103,18 @@ class VarsModule(BaseVarsPlugin):
                 folder = "hosts"
             else:
                 parts = str(entity).split('.')
-                # print("parts: %s", parts)
                 if len(parts) == 1:
                     folder = "hosts"
+
                 elif len(parts) > 1:
                     folder = "domains"
+                    # Loop lookups from domain-root to fqdn
                     parts.reverse()
                     prev_part = ""
                     for part in parts:
                         lookup_part = part + prev_part
                         if lookup_part == str(entity):
                             folder = "hosts"
-                        # print("lookup part: %s in %s/" % (lookup_part, folder))
                         data = combine_vars(
                             data, self._read_vault(folder, lookup_part))
                         prev_part = '.' + part + prev_part
@@ -128,15 +127,11 @@ class VarsModule(BaseVarsPlugin):
             raise AnsibleInternalError(
                 "Unrecognised entity type encountered in hashivault_vars plugin: %s", type(entity))
 
-        # print("folder: %s" % (folder))
         return combine_vars(data, self._read_vault(folder, entity))
 
     def get_vars(self, loader, path, entities, cache=True):
         if not isinstance(entities, list):
             entities = [entities]
-        # print("entities: %s" % (entities))
-        # print("entities: %s" % (dir(entities[0])))
-        # print("entities: %s" % (type(entities[0])))
 
         super(VarsModule, self).get_vars(loader, path, entities)
 
@@ -144,7 +139,5 @@ class VarsModule(BaseVarsPlugin):
 
         for entity in entities:
             data = self._get_vars(data, entity, cache)
-
-        # print("returning:", format_json(data))
 
         return data
