@@ -21,6 +21,9 @@ DOCUMENTATION = '''
 
 urllib3.disable_warnings()  # suppress InsecureRequestWarning
 
+# cache for vault lookups, keyed by folder
+vault_cache = {}
+
 
 class VarsModule(BaseVarsPlugin):
     """
@@ -90,12 +93,20 @@ class VarsModule(BaseVarsPlugin):
     def _read_vault(self, folder, entity_name):
         key = "%s/%s" % (folder, entity_name)
         # print("_read_vault key: %s" % (key))
+
+        cached_value = vault_cache.get(key)
+        if cached_value != None:
+            # print("returned key: %s = cached_value: %s" % (key, cached_value))
+            return cached_value
+
         result = self.v_client.read(
             path="secret/ansible/%s" % (key)
         )
-        if not result:
-            return {}
-        return result["data"]
+        data = {}
+        if result:
+            data = result["data"]
+        vault_cache[key] = data
+        return data
 
     def _get_vars(self, data, entity, cache):
         folder = ""
