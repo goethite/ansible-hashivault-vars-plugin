@@ -57,15 +57,28 @@ class VarsModule(BaseVarsPlugin):
     def __init__(self):
         super(BaseVarsPlugin, self).__init__()
 
+        vault_addr = "http://127.0.0.1:8200"
+        if os.environ.get('VAULT_ADDR') != None:
+            vault_addr = os.environ.get('VAULT_ADDR')
+
+        vault_token = ""
+        if os.environ.get('VAULT_TOKEN') != None:
+            vault_token = os.environ.get('VAULT_TOKEN')
+
+        vault_skip_verify = "0"
+        if os.environ.get('VAULT_SKIP_VERIFY') != None:
+            vault_skip_verify = os.environ.get('VAULT_SKIP_VERIFY')
+
         self.v_client = hvac.Client(
-            url=os.environ['VAULT_ADDR'],
-            token=os.environ['VAULT_TOKEN'],
-            # verify=os.environ['VAULT_SKIP_VERIFY'] != '1'
+            url=vault_addr,
+            token=vault_token,
+            verify=vault_skip_verify
             )
         assert self.v_client.is_authenticated()
 
     # See https://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python
     def _is_valid_ipv4_address(self, address):
+        """Test if address is an ipv4 address."""
         try:
             socket.inet_pton(socket.AF_INET, address)
         except AttributeError:  # no inet_pton here, sorry
@@ -79,6 +92,7 @@ class VarsModule(BaseVarsPlugin):
         return True
 
     def _is_valid_ipv6_address(self, address):
+        """Test if address is an ipv6 address."""
         try:
             socket.inet_pton(socket.AF_INET6, address)
         except socket.error:  # not a valid address
@@ -86,17 +100,25 @@ class VarsModule(BaseVarsPlugin):
         return True
 
     def _is_valid_ip_address(self, address):
+        """Test if address is an ipv4 or ipv6 address."""
         if self._is_valid_ipv4_address(address):
             return True
         return self._is_valid_ipv6_address(address)
 
     def _read_vault(self, folder, entity_name):
+        """Read a secret from a folder in Hashicorp Vault.
+
+        Arguments:
+            folder      -- Vault folder to read
+            entity_name -- Secret name to read from folder
+
+        Returns:
+            Dictionary of result data from vault
+        """
         key = "%s/%s" % (folder, entity_name)
-        # print("_read_vault key: %s" % (key))
 
         cached_value = vault_cache.get(key)
         if cached_value != None:
-            # print("returned key: %s = cached_value: %s" % (key, cached_value))
             return cached_value
 
         result = self.v_client.read(
@@ -108,7 +130,16 @@ class VarsModule(BaseVarsPlugin):
         vault_cache[key] = data
         return data
 
-    def _get_vars(self, data, entity, cache):
+    def _get_vars(self, data, entity):
+        """Resolve lookup for vars from Vault.
+
+        Arguments:
+            data -- dict to accumulate vars into
+            entity -- Ansible Group or Host entity to lookup for
+
+        Returns:
+            Dictionary of combined / overlayed vars values.
+        """
         folder = ""
         if isinstance(entity, Group):
             folder = "groups"
@@ -161,23 +192,15 @@ class VarsModule(BaseVarsPlugin):
 
         return combine_vars(data, self._read_vault(folder, entity.name))
 
-    def get_vars(self, loader, path, entities, cache=True):
+    def get_vars(self, loader, path, entities):
+        """Entry point called from Ansible to get vars."""
         if not isinstance(entities, list):
             entities = [entities]
 
         super(VarsModule, self).get_vars(loader, path, entities)
 
         data = {}
-
-        # print("entities type: %s" % type(entities))
-        # print("entities: %s" % dir(entities))
-        # print("----------------------")
         for entity in entities:
-            # print("entity: %s" % dir(entity))
-            # print("entity #2: %s" % entity.name)
-            # print("entity #2: %s" % entity.vars)
+            data = self._get_vars(data, entity)
 
-            data = self._get_vars(data, entity, cache)
-
-        # print("returning data: %s" % format_json(data))
         return data
