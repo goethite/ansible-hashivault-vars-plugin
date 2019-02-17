@@ -33,7 +33,7 @@ e.g. `ansible_user`, `ansible_password`, etc.
 The layered lookups are merged, with the last taking precendence over
 earlier lookups.
 
-Lookups are not yet cached for the run (TODO).
+Lookups to the vault are cached for the run.
 
 ### A test dump playbook using a vars plugin:
 ```bash
