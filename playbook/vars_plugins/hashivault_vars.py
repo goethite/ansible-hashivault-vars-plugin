@@ -37,9 +37,10 @@ class VarsModule(BaseVarsPlugin):
             ...
 
         Hosts/Domains:
-            /secret/ansible/domains/com
-            /secret/ansible/domains/example.com
-            /secret/ansible/hosts/hosta.example.com
+            /secret/ansible/{connection}/domains/com
+            /secret/ansible/{connection}/domains/example.com
+            /secret/ansible/{connection}/hosts/hosta.example.com
+        where {connection} is ansible_connection, e.g.: "ssh", "winrm", ...
 
     All values retrieved from these paths are mapped as ansible variables,
     e.g. ansible_user, ansible_password, etc.
@@ -86,9 +87,11 @@ class VarsModule(BaseVarsPlugin):
             return True
         return self._is_valid_ipv6_address(address)
 
-    def _read_vault(self, folder, entity):
+    def _read_vault(self, folder, entity_name):
+        key = "%s/%s" % (folder, entity_name)
+        # print("_read_vault key: %s" % (key))
         result = self.v_client.read(
-            path='secret/ansible/%s/%s' % (folder, entity)
+            path="secret/ansible/%s" % (key)
         )
         if not result:
             return {}
@@ -99,24 +102,42 @@ class VarsModule(BaseVarsPlugin):
         if isinstance(entity, Group):
             folder = "groups"
         elif isinstance(entity, Host):
-            if self._is_valid_ip_address(str(entity)):
-                folder = "hosts"
+            # Resolve default connection details
+            if entity.vars.get("ansible_port") == None:
+                if entity.vars.get("ansible_connection") == None:
+                    data["ansible_port"] = 22
             else:
-                parts = str(entity).split('.')
+                data["ansible_port"] = entity.vars.get("ansible_port")
+
+            if entity.vars.get("ansible_connection") == None:
+                if data["ansible_port"] == 5985 or data["ansible_port"] == 5986:
+                    data["ansible_connection"] = "winrm"
+                else:
+                    data["ansible_connection"] = "ssh"
+            else:
+                data["ansible_connection"] = entity.vars.get(
+                    "ansible_connection")
+
+            folder = "%s/hosts" % (data["ansible_connection"])
+
+            if not self._is_valid_ip_address(entity.name):
+                parts = entity.name.split('.')
                 if len(parts) == 1:
-                    folder = "hosts"
+                    pass
 
                 elif len(parts) > 1:
-                    folder = "domains"
+                    folder = "%s/domains" % (data["ansible_connection"])
                     # Loop lookups from domain-root to fqdn
                     parts.reverse()
                     prev_part = ""
                     for part in parts:
                         lookup_part = part + prev_part
-                        if lookup_part == str(entity):
-                            folder = "hosts"
+                        if lookup_part == entity.name:
+                            folder = "%s/hosts" % (data["ansible_connection"])
                         data = combine_vars(
-                            data, self._read_vault(folder, lookup_part))
+                            data,
+                            self._read_vault(folder, lookup_part)
+                        )
                         prev_part = '.' + part + prev_part
                     return data
                 else:
@@ -127,7 +148,7 @@ class VarsModule(BaseVarsPlugin):
             raise AnsibleInternalError(
                 "Unrecognised entity type encountered in hashivault_vars plugin: %s", type(entity))
 
-        return combine_vars(data, self._read_vault(folder, entity))
+        return combine_vars(data, self._read_vault(folder, entity.name))
 
     def get_vars(self, loader, path, entities, cache=True):
         if not isinstance(entities, list):
@@ -137,7 +158,15 @@ class VarsModule(BaseVarsPlugin):
 
         data = {}
 
+        # print("entities type: %s" % type(entities))
+        # print("entities: %s" % dir(entities))
+        # print("----------------------")
         for entity in entities:
+            # print("entity: %s" % dir(entity))
+            # print("entity #2: %s" % entity.name)
+            # print("entity #2: %s" % entity.vars)
+
             data = self._get_vars(data, entity, cache)
 
+        # print("returning data: %s" % format_json(data))
         return data

@@ -3,10 +3,15 @@
 
 extras = "
 sudo apt update && \
-sudo apt install -y python-pip sshpass && \
+sudo apt install -y python-pip sshpass libkrb5-dev && \
 sudo pip install --upgrade pip==18.0 && \
 sudo pip install \
 		ansible==2.7.6 \
+    botocore==1.12.86 \
+		boto==2.49.0 \
+		boto3==1.9.86 \
+		awscli==1.16.96 \
+    pywinrm[kerberos]==0.3.0 \
     hvac \
     pretty_json
 "

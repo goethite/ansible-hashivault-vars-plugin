@@ -19,9 +19,13 @@ Precendence (applied top to bottom, so last takes precendence):
   * ...
 
 * Hosts/Domains:
-  * `/secret/ansible/domains/com`
-  * `/secret/ansible/domains/example.com`
-  * `/secret/ansible/hosts/hosta.example.com`
+  * `/secret/ansible/{connection}/domains/com`
+  * `/secret/ansible/{connection}/domains/example.com`
+  * `/secret/ansible/{connection}/hosts/hosta.example.com`
+
+where `{connection}` is `ansible_connection`, e.g.: "ssh", "winrm", ...
+(this plugin attempts to make assumptions where `ansible_connection` is not
+set)
 
 All values retrieved from these paths are mapped as ansible variables,
 e.g. `ansible_user`, `ansible_password`, etc.
