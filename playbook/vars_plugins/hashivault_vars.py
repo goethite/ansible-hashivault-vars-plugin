@@ -51,7 +51,7 @@ class VarsModule(BaseVarsPlugin):
     The layered lookups are merged, with the last taking precendence over
     earlier lookups.
 
-    Lookups are not yet cached for the run (TODO).
+    Lookups to the vault are cached for the run.
     """
 
     def __init__(self):
