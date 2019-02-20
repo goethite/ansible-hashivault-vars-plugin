@@ -67,7 +67,7 @@ class VarsModule(BaseVarsPlugin):
 
         vault_skip_verify = False
         if os.environ.get('VAULT_SKIP_VERIFY') != None:
-            vault_skip_verify = os.environ.get('VAULT_SKIP_VERIFY') != '1'
+            vault_skip_verify = os.environ.get('VAULT_SKIP_VERIFY') == '1'
 
         self.v_client = hvac.Client(
             url=vault_addr,
