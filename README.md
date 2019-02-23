@@ -1,5 +1,7 @@
 # Ansible Vars Plugin for Hashicorp Vault Credential Precendence Resolution
 
+**Project migrated to [hashivault_vars](https://github.com/goethite/hashivault_vars).**
+
 This is a proof-of-concept for the [gostint](https://goethite.github.io/gostint/)
 project.
 
